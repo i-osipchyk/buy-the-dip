@@ -1,0 +1,24 @@
+variable "project" {
+  type    = string
+  default = "btd"
+}
+
+variable "env" {
+  type = string
+}
+
+variable "region" {
+  description = "Fed from AWS_REGION: CI passes -var region=..., local shells export TF_VAR_region=$AWS_REGION."
+  type        = string
+  default     = "eu-west-1"
+}
+
+variable "image_uri" {
+  description = "ECR image by digest; CI passes it."
+  type        = string
+}
+
+variable "schedules_enabled" {
+  type    = bool
+  default = false
+}

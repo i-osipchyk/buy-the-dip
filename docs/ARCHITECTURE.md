@@ -220,7 +220,8 @@ and extended with:
 
 The cTrader client id, secret and token are read on every run from the platform's shared
 `/platform/shared/ctrader-*`. btd never refreshes or copies the token.
-`ctrader_account_id` is per env.
+`/btd/<env>/ctrader-account-id` is per env. The access token is re-read from SSM on every
+invocation, not only at cold start (platform conventions § Secrets).
 
 ---
 
@@ -260,7 +261,7 @@ The account is shared, so btd keeps a **virtual ledger** that behaves like a ded
 
 - **App alerts and summaries go straight to Telegram**, through a project bot (copied from gtb's
   `alerts/telegram.py` and `messages.py`). Format: `ALERT [dev] <date>: …`. Secrets
-  `telegram_bot_token` and `telegram_chat_id` are in SSM under `/btd/<env>/`.
+  `telegram-bot-token` and `telegram-chat-id` are in SSM under `/btd/<env>/`.
 - **Infra alarms** (Lambda errors) come from `lambda-app` → `platform-alarms` SNS → Telegram.
 - **Evening summary** every session, also as a heartbeat on quiet days: equity, day change,
   drawdown, fills, exits with reason and return, tonight's entries (ticker, `L`, volume), TPs
@@ -340,7 +341,8 @@ mae, mfe`.
   in gtb). **Only `dev` is deployed**, against the shared Pepperstone demo account. `prod` exists
   as config only; there's no prod deploy job and no prod AWS resources until the user decides.
 - A push to the `dev` branch deploys dev through the platform's reusable workflow (OIDC).
-- SSM: `/btd/dev/ctrader_account_id`, `/btd/dev/telegram_bot_token`, `/btd/dev/telegram_chat_id`
+- SSM (kebab-case, platform convention): `/btd/dev/ctrader-account-id`,
+  `/btd/dev/telegram-bot-token`, `/btd/dev/telegram-chat-id`
   (set by `scripts/put_secrets.py`). The cTrader app credentials and token are
   `/platform/shared/ctrader-*`.
 - Region from `AWS_REGION`, default eu-west-1.

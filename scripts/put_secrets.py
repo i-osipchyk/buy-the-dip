@@ -1,0 +1,53 @@
+"""Push secrets from .env to SSM SecureStrings under /btd/<env>/<kebab-name>.
+
+Terraform never holds secret values (they'd land in state). Prints names only, never values.
+
+    uv run python scripts/put_secrets.py --env dev [--dry-run]
+
+Add a key: list it in SECRETS and in .env.example. The Lambda sees it as the same UPPER_SNAKE
+env var (config.load_env).
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+import boto3
+
+from btd.config import load_env
+
+SECRETS: tuple[str, ...] = (
+    "CTRADER_ACCOUNT_ID",
+    "TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID",
+)
+
+
+def main() -> None:
+    load_env(Path(__file__).parents[1] / ".env")  # also defaults AWS_REGION to eu-west-1
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env", choices=["dev", "prod"], required=True)
+    parser.add_argument("--dry-run", action="store_true")
+    args = parser.parse_args()
+
+    if not SECRETS:
+        sys.exit("SECRETS is empty: list the .env keys to push")
+    missing = [k for k in SECRETS if not os.getenv(k)]
+    if missing:
+        sys.exit(f"missing in .env: {', '.join(missing)}")
+
+    region = os.environ["AWS_REGION"]
+    ssm = boto3.client("ssm", region_name=region)
+    for key in SECRETS:
+        name = f"/btd/{args.env}/{key.lower().replace('_', '-')}"
+        print(f"{'would put' if args.dry_run else 'put'} {name} ({region})")
+        if not args.dry_run:
+            ssm.put_parameter(Name=name, Value=os.environ[key], Type="SecureString",
+                              Overwrite=True)
+
+
+if __name__ == "__main__":
+    main()

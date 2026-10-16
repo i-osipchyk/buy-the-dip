@@ -8,16 +8,20 @@ except where marked as parallel.
 
 ## Phase 0: Scaffolding
 
-- [ ] `uvx copier copy --trust ~/dev/platform .` into this repo: `project_name=buy-the-dip`,
+- [x] `uvx copier copy --trust ~/dev/platform .` into this repo: `project_name=buy-the-dip`,
       `slug=btd`, `package=btd`, `uses_llm=no`, `deploy_lambda=yes`. Keep the existing
       `CLAUDE.md` and `docs/`; merge the template's `CLAUDE.md` lines into ours.
-- [ ] Switch the environments to `dev`/`prod` (as gtb does): `infra/env/dev.tfvars` only and a
+- [x] Switch the environments to `dev`/`prod` (as gtb does): `infra/env/dev.tfvars` only and a
       deploy workflow for `dev` (push to the `dev` branch). **No prod job.**
-- [ ] Runtime deps: `ctrader-open-api`, `protobuf`, `boto3`, `httpx`, `pandas`, `pyarrow`,
+- [x] Runtime deps: `ctrader-open-api`, `protobuf`, `boto3`, `httpx`, `pandas`, `pyarrow`,
       `yfinance`, `exchange_calendars`, `lxml` (or `beautifulsoup4`) for the Wikipedia scrape.
-- [ ] Empty package skeleton matching ARCHITECTURE §12.1.
+- [x] Empty package skeleton matching ARCHITECTURE §12.1.
 
 **Exit:** `uv run pytest`, `uv run ruff check .` and `uv run mypy` pass on the skeleton; CI is green.
+
+*Done 2026-10-16 locally* (template v0.1.2; pytest, ruff and mypy pass). CI is green once the repo
+is pushed (not done yet; the user pushes). Infra still has the template's `example` function;
+Phase 4 replaces it with the real functions and schedules.
 
 ---
 
