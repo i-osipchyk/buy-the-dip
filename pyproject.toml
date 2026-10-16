@@ -55,7 +55,7 @@ target-version = "py312"
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]
 
 [tool.ruff.lint.isort]
-known-local-folder = ["fake_ctrader", "bars"]
+known-local-folder = ["fake_ctrader", "fake_broker", "bars"]
 
 [tool.mypy]
 strict = true

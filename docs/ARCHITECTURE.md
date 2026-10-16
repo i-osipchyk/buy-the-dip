@@ -236,9 +236,14 @@ invocation, not only at cold start (platform conventions § Secrets).
 
 The account is shared, so btd keeps a **virtual ledger** that behaves like a dedicated account.
 
-- **Genesis:** at the first unsupervised evening run, read the account equity once and freeze it
-  as `start_capital`, with the timestamp, in `dev/ledger/genesis.json` (write-once). It's never
-  re-read.
+- **Genesis:** at the first unsupervised evening run, read the account **balance** once and
+  freeze it as `start_capital`, with the timestamp, in `dev/ledger/genesis.json` (write-once).
+  It's never re-read. (The API gives balance, not equity; any open position of the other strategy
+  at that moment is left out, which is fine for a frozen constant.)
+- **Deals carry no label** (only `positionId`/`orderId`), so they are attributed through the ids
+  of every btd-labelled position a run has seen. Each btd position is open on at least one evening
+  before it can close. The ids, the running peak and the −10% warning flag live in
+  `dev/ledger/state.json`.
 - **Recomputed every run from broker facts** (no mutable state):
   - `realized = Σ (gross P&L + commission + swap)` over deals with our label since genesis;
   - `unrealized = Σ volume · (Close[t] − entry price)` over open btd positions, marked at the

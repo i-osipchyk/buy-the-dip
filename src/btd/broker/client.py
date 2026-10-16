@@ -74,6 +74,7 @@ class Position:
     label: str
     opened_at: datetime
     take_profit: float | None = None
+    swap: float = 0.0             # accrued so far, deposit currency (negative = paid)
 
 
 @dataclass(frozen=True)
@@ -106,6 +107,7 @@ class Deal:
     closing: bool
     entry_price: float | None     # closing deals: the position's entry price
     gross_profit: float | None    # closing deals: P&L before commission and swap
+    swap: float | None = None     # closing deals: swap over the position's life (negative = paid)
 
 
 def _ms(dt: datetime) -> int:
@@ -236,7 +238,8 @@ class CTraderClient:
             side=_side(p.tradeData.tradeSide), volume=p.tradeData.volume, entry_price=p.price,
             stop_loss=p.stopLoss if p.HasField("stopLoss") else None, label=p.tradeData.label,
             opened_at=_from_ms(p.tradeData.openTimestamp),
-            take_profit=p.takeProfit if p.HasField("takeProfit") else None) for p in res.position]
+            take_profit=p.takeProfit if p.HasField("takeProfit") else None,
+            swap=p.swap / 10 ** p.moneyDigits) for p in res.position]
         orders = [PendingOrder(
             order_id=o.orderId, symbol_id=o.tradeData.symbolId, side=_side(o.tradeData.tradeSide),
             volume=o.tradeData.volume, stop_price=o.stopPrice,
@@ -303,7 +306,8 @@ class CTraderClient:
                 closing=close is not None,
                 entry_price=close.entryPrice if close is not None else None,
                 gross_profit=close.grossProfit / 10 ** close.moneyDigits
-                if close is not None else None))
+                if close is not None else None,
+                swap=close.swap / 10 ** close.moneyDigits if close is not None else None))
         return sorted(out, key=lambda d: (d.time, d.deal_id))
 
     # --- market data -------------------------------------------------------------------

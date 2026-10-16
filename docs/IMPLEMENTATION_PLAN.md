@@ -92,27 +92,40 @@ Awaiting the user's comparison.
 
 ## Phase 3: Plumbing (offline against fakes)
 
-- [ ] `data/tickers.py`: canonical ↔ yfinance ↔ cTrader mapping and tests.
-- [ ] `data/bars.py`: `BarSource`, `YFinanceSource`, validation (§4.1), snapshot to S3, the cTrader
+- [x] `data/tickers.py`: canonical ↔ yfinance ↔ cTrader mapping and tests.
+- [x] `data/bars.py`: `BarSource`, `YFinanceSource`, validation (§4.1), snapshot to S3, the cTrader
       D1 cross-check.
-- [ ] `data/universe.py`: the Wikipedia scrape, sanity guards, venue intersection, snapshot.
-- [ ] `broker/client.py`: copy from gtb; add limit + GTD, amend SL/TP, symbols list with volume
+- [x] `data/universe.py`: the Wikipedia scrape, sanity guards, venue intersection, snapshot.
+- [x] `broker/client.py`: copy from gtb; add limit + GTD, amend SL/TP, symbols list with volume
       specs, close position, deals with commission and swap. A fake broker for tests.
-- [ ] `ledger.py`: genesis (write-once), recompute from labeled deals, peak and drawdown.
-- [ ] `records/`: the session record model and S3 store; `scripts/trades_from_records.py`.
-- [ ] `runs/evening.py`: an idempotent state machine (no-op if complete, fetch → reconcile → ledger
+- [x] `ledger.py`: genesis (write-once), recompute from labeled deals, peak and drawdown.
+- [x] `records/`: the session record model and S3 store; `scripts/trades_from_records.py`.
+- [x] `runs/evening.py`: an idempotent state machine (no-op if complete, fetch → reconcile → ledger
       → plan → execute → record → summary), degraded mode at 23:00, the passive finality diff.
-- [ ] `runs/open_exit.py`, `runs/morning_check.py`, `runs/heartbeat.py`, and `runs/app.py`
+- [x] `runs/open_exit.py`, `runs/morning_check.py`, `runs/heartbeat.py`, and `runs/app.py`
       handlers.
-- [ ] `alerts/`: Telegram notifier and messages (from gtb); summary, alerts, drawdown alerts at
+- [x] `alerts/`: Telegram notifier and messages (from gtb); summary, alerts, drawdown alerts at
       −10% and −15% (repeated).
-- [ ] Execute/reconcile tests: a double run is a no-op, a retry finds existing orders by
+- [x] Execute/reconcile tests: a double run is a no-op, a retry finds existing orders by
       `clientOrderId`, foreign-label orders are untouched, anomalies alert.
 
 **Exit:** the full offline suite passes. A local `scripts/run_local.py evening --env dev` against
 the demo account produces a correct plan, with order placement behind a `--dry-run` flag.
 
 ---
+
+*Done 2026-10-16* (109 tests). Local dry run `run_local.py evening --at 2026-10-15T16:30
+--dry-run` against the demo account, live Yahoo and Wikipedia: 15 s, 10 signals → 10 orders
+(a hardware-tech selloff), prices in cents, GTD 16:00 ET 10-16. Found and fixed on the way: the
+deal list rejects an empty window (`INCORRECT_BOUNDARIES`) on the run that creates the genesis.
+A 120-day window is fine, so there's no chunking.
+
+**Not wired yet (functions exist where noted):**
+- [ ] the cTrader D1 close cross-check in the evening (`data.bars.cross_check` is tested).
+      478 trendbar requests a night is slow, so the plan is to cross-check only tonight's
+      candidates and held names;
+- [ ] the passive 20:00 finality diff;
+- [ ] `S3Store` is only exercised on Lambda (tests use `DirStore` through the same interface).
 
 ## Phase 4: dev on demo
 

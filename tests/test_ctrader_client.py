@@ -280,7 +280,7 @@ def test_deals_in_a_window_with_money_scaled_and_closing_details():
              time=entry, commission=-3.01, closing=False, entry_price=None, gross_profit=None),
         Deal(deal_id=2, order_id=102, position_id=77, side="sell", volume=8600, price=4244.05,
              time=exit_, commission=-3.01, closing=True, entry_price=4180.27,
-             gross_profit=5485.08),
+             gross_profit=5485.08, swap=0.0),
     ]
     (req,) = fake.of_type(M.ProtoOADealListReq)
     assert (req.fromTimestamp, req.toTimestamp) == (ms(entry.replace(hour=0)),
@@ -520,3 +520,39 @@ def test_fetches_daily_bars():
     assert [(b.ts, b.open, b.high, b.low, b.close) for b in bars] == [
         (day, 750.04, 750.58, 713.19, 715.62)]
     assert {r.period for r in fake.of_type(M.ProtoOAGetTrendbarsReq)} == {MM.D1}
+
+
+def test_a_closing_deal_reports_the_swap_paid_over_the_positions_life():
+    from datetime import UTC, datetime
+
+    from ctrader_open_api.messages import OpenApiModelMessages_pb2 as MM
+    when = datetime(2026, 9, 29, 14, 40, tzinfo=UTC)
+    fake = FakeCTrader()
+    fake.on(M.ProtoOADealListReq, lambda r: [M.ProtoOADealListRes(
+        ctidTraderAccountId=ACCOUNT, hasMore=False, deal=[MM.ProtoOADeal(
+            dealId=3, orderId=103, positionId=5501, volume=700, filledVolume=700, symbolId=334,
+            createTimestamp=int(when.timestamp() * 1000),
+            executionTimestamp=int(when.timestamp() * 1000), executionPrice=731.71,
+            tradeSide=MM.SELL, dealStatus=MM.FILLED, commission=-14, moneyDigits=2,
+            closePositionDetail=MM.ProtoOAClosePositionDetail(
+                entryPrice=713.92, grossProfit=12_453, swap=-87, commission=-28,
+                balance=5_012_453, moneyDigits=2))])])
+
+    (deal,) = run(fake, lambda client: client.deals(when.replace(hour=0), when.replace(hour=23)))
+
+    assert deal.swap == -0.87
+
+
+def test_reconcile_reports_the_swap_accrued_on_an_open_position():
+    from ctrader_open_api.messages import OpenApiModelMessages_pb2 as MM
+    fake = FakeCTrader()
+    fake.on(M.ProtoOAReconcileReq, lambda r: [M.ProtoOAReconcileRes(
+        ctidTraderAccountId=ACCOUNT, position=[MM.ProtoOAPosition(
+            positionId=5501, positionStatus=MM.POSITION_STATUS_OPEN, swap=-123, moneyDigits=2,
+            price=713.92, tradeData=MM.ProtoOATradeData(
+                symbolId=334, volume=700, tradeSide=MM.BUY, label="btd-dev",
+                openTimestamp=1_790_000_000_000))])])
+
+    positions, _ = run(fake, lambda client: client.reconcile())
+
+    assert positions[0].swap == -1.23

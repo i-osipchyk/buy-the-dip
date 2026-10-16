@@ -26,3 +26,15 @@ def spike_fetch(event: dict[str, Any], context: Any) -> dict[str, Any]:
     from btd import spike
 
     return spike.fetch()
+
+
+# The trading runs (ARCHITECTURE §5); wiring in btd.runs.app.
+from btd.runs.app import (  # noqa: E402
+    evening_handler,
+    heartbeat_handler,
+    morning_check_handler,
+    open_exit_handler,
+)
+
+__all__ = ["evening_handler", "heartbeat_handler", "morning_check_handler", "open_exit_handler",
+           "example", "spike_fetch"]
