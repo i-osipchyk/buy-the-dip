@@ -306,8 +306,13 @@ mae, mfe`.
 2. **In-repo backtest.** It loops over sessions, calls the **same `plan()`** that the evening
    Lambda calls, and simulates fills with the backtest's rules (fill on a touch of `L` at
    `min(open, L)`, target at `max(open, T)`, next-open exits at `Open`). Its inputs are bars, a
-   membership calendar (the `date,tickers` CSV format of Hermes's `sp500_history.csv`, or our
-   universe snapshots) and an optional venue list. It writes a trades CSV in Hermes's columns. **The
+   membership calendar and an optional venue list. It writes a trades CSV in Hermes's columns.
+   - **Historical membership is `sp500_history.csv` at the repo root**: the exact file Hermes
+     used (`date,tickers`; 2,720 snapshots, 1996-01-02 to 2026-08-18). It's gitignored and local
+     only, so no CI test may depend on it.
+   - Membership on day d is the latest snapshot dated ≤ d (`bisect_right`, as Hermes does).
+     Dates after the last snapshot carry it forward.
+   - The forward-period parity run uses our daily universe snapshots instead. **The
    user runs Hermes and compares.** That comparison is the gate before anything trades. Use the
    same bar files on both sides, because adjusted prices drift as dividends re-base history.
    After the gate, there's no link to Hermes.

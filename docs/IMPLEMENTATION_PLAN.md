@@ -63,7 +63,8 @@ item 1 is unreliable, **stop and revisit the design with the user** before Phase
       10.
 - [ ] `backtest/`: a fill simulator around `plan()` (touch fill at `min(open, L)`, target at
       `max(open, T)`, next-open exits at `Open`, removal). CLI arguments: window, cost bp,
-      membership CSV (`date,tickers`), optional venue list, bars directory. It writes
+      membership CSV (default `sp500_history.csv` at the repo root, the file Hermes used;
+      gitignored, latest snapshot ≤ date), optional venue list, bars directory. It writes
       `trades_<tag>.csv` in Hermes's columns and an equity CSV.
 - [ ] A yfinance bar downloader for the backtest (cached locally, gitignored).
 

@@ -26,6 +26,9 @@ Read these before writing code:
 - **Indicators match Hermes exactly** (ARCHITECTURE §2.1): per-ticker rows, simple ATR5 (not
   Wilder), positive-price filter, ≥ 220 rows, fully adjusted yfinance bars. Hermes is not a
   dependency: nothing is imported from it.
+- **Backtests use `sp500_history.csv`** (repo root) for point-in-time membership. It's the exact
+  file Hermes used. It's gitignored and local only: never commit it, and keep it out of tests
+  that run in CI.
 - **The account is shared.** Identify our orders by `label="btd-<env>"` and
   `clientOrderId=btd-<env>-YYYYMMDD-<TICKER>-{E|X}`. Never read or touch anything else on the
   account. Equity is the virtual ledger (ARCHITECTURE §7), never the account balance, except once
