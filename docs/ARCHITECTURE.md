@@ -236,7 +236,7 @@ invocation, not only at cold start (platform conventions § Secrets).
 
 The account is shared, so btd keeps a **virtual ledger** that behaves like a dedicated account.
 
-- **Genesis:** at the first unsupervised evening run, read the account **balance** once and
+- **Genesis:** at the first evening run (the supervised one, Phase 4), read the account **balance** once and
   freeze it as `start_capital`, with the timestamp, in `dev/ledger/genesis.json` (write-once).
   It's never re-read. (The API gives balance, not equity; any open position of the other strategy
   at that moment is left out, which is fine for a frozen constant.)

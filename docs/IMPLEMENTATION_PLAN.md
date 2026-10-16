@@ -129,14 +129,20 @@ A 120-day window is fine, so there's no chunking.
 
 ## Phase 4: dev on demo
 
-- [ ] Infra: `data-bucket`, `lambda-app` with the four functions and §5 schedules (timezone
-      America/New_York), `schedules_enabled = false` at first.
-- [ ] Wire the repo in platform bootstrap (the user applies it) and the GitHub `dev` environment;
-      put the SSM secrets.
-- [ ] Deploy dev. **One supervised evening run** with the user watching: plan reviewed, orders
-      checked on the account, then the 09:35 / 09:50 runs the next morning.
-- [ ] Enable the schedules. **The forward-test clock starts at the first unsupervised session;**
-      the ledger genesis is captured then.
+- [x] Infra: the four functions (`evening` 600 s / 2 GB, `open_exit`, `morning_check`,
+      `heartbeat`) and the §5 schedules (America/New_York), gated by `trading_enabled` (false),
+      log retention 400 days. `tests/test_infra.py` keeps `main.tf` in line with the handlers
+      and the §5 times. `spike_fetch` stays until Phase 1 closes.
+- [x] Repo wired in platform bootstrap, GitHub `dev` environment, SSM secrets (done in Phase 1).
+- [ ] Deploy dev (push `dev`).
+- [ ] **One supervised evening run** with the user watching, after 16:30 ET on a session:
+      `aws lambda invoke --function-name btd-dev-evening out.json`, then the Telegram summary,
+      `aws logs tail /aws/lambda/btd-dev-evening --since 15m`, and the `btd-dev` orders on the
+      account. The next morning: `btd-dev-open_exit` (≥ 09:35 ET) and `btd-dev-morning_check`
+      (≥ 09:50 ET) by hand.
+      This first run **captures the ledger genesis** (the account balance) and places real demo
+      orders, so the supervised session is session 1 of the forward test.
+- [ ] Flip `trading_enabled = true` in `infra/env/dev.tfvars` and push.
 
 **Exit:** five consecutive sessions with complete records, no anomalies, and summaries received.
 

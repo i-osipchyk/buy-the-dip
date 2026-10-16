@@ -22,3 +22,9 @@ variable "schedules_enabled" {
   type    = bool
   default = false
 }
+
+variable "trading_enabled" {
+  description = "The trading schedules (evening, open_exit, morning_check, heartbeat). Off until the supervised first run (IMPLEMENTATION_PLAN Phase 4)."
+  type        = bool
+  default     = false
+}
