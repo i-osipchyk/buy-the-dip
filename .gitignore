@@ -221,3 +221,15 @@ __marimo__/
 
 # SP500 List
 sp500_history.csv
+# Platform template (secrets, terraform, local data)
+.env.*
+!.env.example
+infra/.terraform/
+infra/tfplan
+infra/plan.txt
+*.tfstate
+*.tfstate.*
+.DS_Store
+data/local/
+# ENV/ above matches infra/env/ on case-insensitive filesystems; tfvars must be tracked
+!infra/env/

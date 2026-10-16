@@ -8,16 +8,20 @@ except where marked as parallel.
 
 ## Phase 0: Scaffolding
 
-- [ ] `uvx copier copy --trust ~/dev/platform .` into this repo: `project_name=buy-the-dip`,
+- [x] `uvx copier copy --trust ~/dev/platform .` into this repo: `project_name=buy-the-dip`,
       `slug=btd`, `package=btd`, `uses_llm=no`, `deploy_lambda=yes`. Keep the existing
       `CLAUDE.md` and `docs/`; merge the template's `CLAUDE.md` lines into ours.
-- [ ] Switch the environments to `dev`/`prod` (as gtb does): `infra/env/dev.tfvars` only and a
+- [x] Switch the environments to `dev`/`prod` (as gtb does): `infra/env/dev.tfvars` only and a
       deploy workflow for `dev` (push to the `dev` branch). **No prod job.**
-- [ ] Runtime deps: `ctrader-open-api`, `protobuf`, `boto3`, `httpx`, `pandas`, `pyarrow`,
+- [x] Runtime deps: `ctrader-open-api`, `protobuf`, `boto3`, `httpx`, `pandas`, `pyarrow`,
       `yfinance`, `exchange_calendars`, `lxml` (or `beautifulsoup4`) for the Wikipedia scrape.
-- [ ] Empty package skeleton matching ARCHITECTURE §12.1.
+- [x] Empty package skeleton matching ARCHITECTURE §12.1.
 
 **Exit:** `uv run pytest`, `uv run ruff check .` and `uv run mypy` pass on the skeleton; CI is green.
+
+*Done 2026-10-16 locally* (template v0.1.2; pytest, ruff and mypy pass). CI is green once the repo
+is pushed (not done yet; the user pushes). Infra still has the template's `example` function;
+Phase 4 replaces it with the real functions and schedules.
 
 ---
 
@@ -32,15 +36,15 @@ Scripts in `scripts/spike/`, plus one minimal Lambda for item 1. Record the answ
       per name.
 - [ ] **3. cTrader on the shared demo account** (`scripts/spike/broker_probe.py`, demo only,
       refuses a live account):
-  - [ ] account mode: hedging or netting;
-  - [ ] a GTD buy limit **placed while the market is closed** is accepted (**go/no-go**);
+  - [x] account mode: hedging or netting;
+  - [x] a GTD buy limit **placed while the market is closed** is accepted (**go/no-go**);
   - [ ] a position TP amend while closed;
   - [ ] a TP gap fill at the open price;
   - [ ] GTD expiry at 16:00 ET;
-  - [ ] `minVolume` / `stepVolume` on a sample, including `BRK.B.US`.
-- [ ] **4. Pepperstone D1 against yfinance:** bar boundaries and the close difference
+  - [x] `minVolume` / `stepVolume` on a sample, including `BRK.B.US`.
+- [x] **4. Pepperstone D1 against yfinance:** bar boundaries and the close difference
       distribution, which sets the §4.1 threshold.
-- [ ] **5. The Wikipedia scrape** ∩ venue symbols = about 478, with every mapping resolved.
+- [x] **5. The Wikipedia scrape** ∩ venue symbols = about 478, with every mapping resolved.
 
 **Exit:** every item is answered in `docs/SPIKE.md`. If item 3's closed-market placement fails, or
 item 1 is unreliable, **stop and revisit the design with the user** before Phase 2.

@@ -1,0 +1,12 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v0.1.2
+_src_path: /Users/ivanosipchyk/dev/platform
+deploy_lambda: true
+description: Forward test of the S&P 500 volatile-dip limit buy on Pepperstone cTrader
+envs: demo,live
+github_owner: i-osipchyk
+package: btd
+platform_version: v0.1.2
+project_name: buy-the-dip
+slug: btd
+uses_llm: false

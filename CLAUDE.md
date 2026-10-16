@@ -4,7 +4,10 @@ Forward test of the S&P 500 volatile-dip limit buy: an automated bot on a Pepper
 **demo** account, running as AWS Lambdas, signals from yfinance daily bars.
 
 This project follows the ~/dev platform conventions (see `../CLAUDE.md` and `../platform/docs/`),
-with the deviations listed below.
+with the deviations listed below. Generated from the platform template at v0.1.2;
+`.copier-answers.yml` records the choices (it still says `envs: demo,live`, see the deviations: a
+`copier update` will try to recreate `demo`/`live` files and the template deploy workflow — reject
+those hunks).
 
 Read these before writing code:
 
@@ -66,6 +69,14 @@ Read these before writing code:
   through the platform. This was the user's choice.
 - App alerts and the daily summary go **straight to Telegram** through a project bot (gtb
   pattern). Infra alarms still go through `platform-alarms`.
+
+## Layout
+
+- `src/btd/config.py` loads the environment: `.env` locally, SSM on Lambda (`/btd/<env>/*` and
+  `/platform/shared/*`, kebab-case names → UPPER_SNAKE env vars).
+- `src/btd/handlers.py` holds the Lambda entry points. Keep them thin.
+- `infra/` holds Terraform. It calls the platform `lambda-app` / `data-bucket` modules, pinned to a tag.
+- Package layout: ARCHITECTURE §12.1.
 
 ## Commands
 

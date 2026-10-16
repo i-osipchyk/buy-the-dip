@@ -1,0 +1,49 @@
+"""Environment loading: one call at start-up, then read os.environ.
+
+Locally: values come from .env (gitignored; see .env.example).
+On Lambda: SSM parameters under SECRETS_PATH (/btd/<env>) and SHARED_SECRETS_PATH
+(/platform/shared) are copied into os.environ, kebab-case name -> UPPER_SNAKE, e.g.
+/btd/demo/deepseek-api-key -> DEEPSEEK_API_KEY. Env vars already set win.
+
+AWS_REGION is always set afterwards: from the environment / .env (Lambda sets it itself),
+else DEFAULT_AWS_REGION. AWS_DEFAULT_REGION mirrors it, so every boto3 client agrees.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+DEFAULT_AWS_REGION = "eu-west-1"
+
+
+def load_env(dotenv_path: str | Path | None = None) -> None:
+    on_lambda = bool(os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+    if not on_lambda:
+        from dotenv import load_dotenv
+
+        load_dotenv(dotenv_path)
+    os.environ.setdefault("AWS_REGION", DEFAULT_AWS_REGION)
+    os.environ.setdefault("AWS_DEFAULT_REGION", os.environ["AWS_REGION"])
+    if on_lambda:
+        _load_ssm()
+
+
+def _load_ssm() -> None:
+    import boto3
+
+    ssm = boto3.client("ssm", region_name=os.environ["AWS_REGION"])
+    for path in filter(None, (os.getenv("SHARED_SECRETS_PATH"), os.getenv("SECRETS_PATH"))):
+        for page in ssm.get_paginator("get_parameters_by_path").paginate(
+            Path=path, Recursive=False, WithDecryption=True
+        ):
+            for p in page["Parameters"]:
+                key = p["Name"].rsplit("/", 1)[-1].replace("-", "_").upper()
+                os.environ.setdefault(key, p["Value"])
+
+
+def require(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"{name} is not set (add it to .env locally / SSM when deployed)")
+    return value

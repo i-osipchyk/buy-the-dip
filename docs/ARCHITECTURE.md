@@ -52,7 +52,7 @@ Per ticker, over **that ticker's own rows** (not calendar days), on fully adjust
 
 - **Held** means a btd position that is open and **not** flagged to exit at the next open. The
   backtest processes next-open exits before entries, so a position leaving at the open does not
-  block its own ticker. (A rebound-flagged name can't signal anyway: `C[t] > H[t−1]` implies an up
+  block its own ticker. The account is hedged (spike), so such a re-entry is a separate position. (A rebound-flagged name can't signal anyway: `C[t] > H[t−1]` implies an up
   day.)
 - Rank by `VolPct` descending; ties by ticker ascending, for determinism.
 - `free = 10 − open + flagged_for_open_exit`. Order the top `free` candidates. Do **not**
@@ -126,8 +126,10 @@ point-in-time membership. That's the same rule, applied to today.
   Yahoo blocks Lambda, a home fetcher or a paid vendor replaces only this stage.
 - **Validation before planning:** the last bar is dated t; ≥ 98% of the universe has a bar for t;
   no NaN in OHLC for t; every held ticker has a bar for t.
-- **Cross-check:** `Close[t]` against the cTrader D1 close per symbol. Log differences over
-  1%; alert if more than 5% of names exceed it. The threshold is to be set from spike item 4.
+- **Cross-check:** `Close[t]` against the cTrader D1 close per symbol. A D1 bar opens at 17:00
+  New York the evening **before** its session (session date = `(open in NY + 7 h).date()`). Log
+  names differing by more than 150 bp; alert if more than 5% of names exceed it (the spike's worst
+  normal-day difference was 112 bp; [SPIKE §4](SPIKE.md#4-pepperstone-d1-against-yfinance)).
 - **Finality check (passive):** a 20:00 ET re-fetch diffs `Close[t]`, signals, `L` and `T`
   against what was traded and logs the result. It never changes orders. Review after a month.
 
@@ -140,8 +142,9 @@ point-in-time membership. That's the same rule, applied to today.
   Store symbol id, `minVolume`, `stepVolume`.
 - **Universe = constituents ∩ venue** (about 478). The snapshot is `dev/universe/<date>.json`,
   including the venue specs.
-- **Canonical ticker:** S&P dot style (`BRK.B`). Mapping: yfinance `BRK-B`, cTrader `BRK.B.US`.
-  Unit-tested on the odd ones.
+- **Canonical ticker:** S&P dot style (`BRK.B`). yfinance: dots become dashes (`BRK-B`). The
+  venue spells share classes **inconsistently** (`BRK.B.US` but `BF-B.US`), so the canonical →
+  venue name map is built from the venue list (`from_venue`), never by rule.
 - A ticker change (FB → META) shows as remove + add: it trips the sanity alert, and you decide.
 
 ### 4.3 Calendar
@@ -220,7 +223,8 @@ and extended with:
 
 The cTrader client id, secret and token are read on every run from the platform's shared
 `/platform/shared/ctrader-*`. btd never refreshes or copies the token.
-`ctrader_account_id` is per env.
+`/btd/<env>/ctrader-account-id` is per env. The access token is re-read from SSM on every
+invocation, not only at cold start (platform conventions § Secrets).
 
 ---
 
@@ -260,7 +264,7 @@ The account is shared, so btd keeps a **virtual ledger** that behaves like a ded
 
 - **App alerts and summaries go straight to Telegram**, through a project bot (copied from gtb's
   `alerts/telegram.py` and `messages.py`). Format: `ALERT [dev] <date>: …`. Secrets
-  `telegram_bot_token` and `telegram_chat_id` are in SSM under `/btd/<env>/`.
+  `telegram-bot-token` and `telegram-chat-id` are in SSM under `/btd/<env>/`.
 - **Infra alarms** (Lambda errors) come from `lambda-app` → `platform-alarms` SNS → Telegram.
 - **Evening summary** every session, also as a heartbeat on quiet days: equity, day change,
   drawdown, fills, exits with reason and return, tonight's entries (ticker, `L`, volume), TPs
@@ -340,7 +344,8 @@ mae, mfe`.
   in gtb). **Only `dev` is deployed**, against the shared Pepperstone demo account. `prod` exists
   as config only; there's no prod deploy job and no prod AWS resources until the user decides.
 - A push to the `dev` branch deploys dev through the platform's reusable workflow (OIDC).
-- SSM: `/btd/dev/ctrader_account_id`, `/btd/dev/telegram_bot_token`, `/btd/dev/telegram_chat_id`
+- SSM (kebab-case, platform convention): `/btd/dev/ctrader-account-id`,
+  `/btd/dev/telegram-bot-token`, `/btd/dev/telegram-chat-id`
   (set by `scripts/put_secrets.py`). The cTrader app credentials and token are
   `/platform/shared/ctrader-*`.
 - Region from `AWS_REGION`, default eu-west-1.
@@ -374,7 +379,8 @@ scripts/                 # put_secrets, trades_from_records, parity, spike/
 ## 13. Open questions (spike)
 
 These are answered by the spike before the trading code exists. Item 3 is the **go/no-go** for
-evening placement.
+evening placement. **Results: [SPIKE.md](SPIKE.md).** The go/no-go passed: a GTD limit placed
+while the market is closed is accepted, and the account is hedged.
 
 1. **yfinance from Lambda (eu-west-1):** 478 × 300 days, `auto_adjust`, 5 sessions at 16:30 and
    17:00. Success rate, latency, missing names.

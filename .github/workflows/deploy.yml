@@ -1,0 +1,36 @@
+# Deploys after CI passes on a push to the `dev` branch -> dev (Pepperstone cTrader DEMO account).
+# prod is NOT deployed: there is deliberately no prod job (CLAUDE.md). Adding one is a decision
+# for the user when the forward test is done (see gtb's deploy.yml for the PROD_ENABLED pattern).
+# Repo variables: AWS_ACCOUNT_ID (required), AWS_REGION (optional, default eu-west-1).
+# See platform docs/deployment.md.
+# workflow_run always uses this file from the default branch (main), so changes here take effect
+# once they're on main.
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [dev]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [dev]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  dev:
+    if: >-
+      ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'dev')
+      || (github.event_name == 'workflow_dispatch' && inputs.environment == 'dev') }}
+    uses: i-osipchyk/platform/.github/workflows/lambda-deploy.yml@v0.1.2
+    with:
+      project: btd
+      environment: dev
+      aws-account-id: ${{ vars.AWS_ACCOUNT_ID }}
+      aws-region: ${{ vars.AWS_REGION || 'eu-west-1' }}
