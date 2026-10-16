@@ -190,6 +190,10 @@ use the defaults.
 | Target | The position's own take-profit, `ProtoOAAmendPositionSLTPReq`, every evening |
 | Next-open exit | Market close of the position (by position id and volume) at 09:35 ET |
 
+`plan()` returns **exact** `L` and `T`; execute rounds them to the symbol's `digits` (cents) when
+it sends the order. Rounding inside the core would change backtest results on low adjusted
+historical prices (NFLX 2011 ≈ $3, where a cent is about 0.3%).
+
 ### 6.3 Reconciliation (execute)
 
 The plan describes the **desired state** for the next session: entry orders, the TP per position,

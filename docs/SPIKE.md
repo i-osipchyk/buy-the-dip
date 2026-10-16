@@ -6,7 +6,7 @@ was probed with orders labelled `btd-spike` only.
 
 | # | Question | Status | Answer |
 |---|---|---|---|
-| 1 | yfinance from Lambda | **pending** (deploy) | Local baseline: 477/477 in 11.5 s, the latest bar complete for all. Lambda: `spike_fetch` at 16:30 and 17:00 ET once deployed |
+| 1 | yfinance from Lambda | **promising**; scheduled runs pending | Local: 477/477 in 11.5 s. Lambda (manual, 04:49 ET): Wikipedia 200, **503/503 in 37 s**, latest bar complete for all. Scheduled 16:30/17:00 ET runs collecting |
 | 2 | Close finality | **pending** (needs evening fetches) | — |
 | 3 | cTrader behaviour | **go**; 3 checks pending | GTD limit while closed **accepted**; market order while closed **rejected**; account **hedged** |
 | 4 | D1 against yfinance | **done** | D1 bars open 17:00 NY the evening before; regular session only; close −6 bp median |
@@ -19,10 +19,15 @@ was probed with orders labelled `btd-spike` only.
 - **Local baseline (2026-10-16 04:25 ET):** `yf.download` of 477 tickers, `period=15mo`,
   `auto_adjust=True`: 11.5 s, 477/477 tickers, about 316 rows each, 2026-10-15 complete for all.
   A second local run over all 503 constituents took 19 s, with 503/503.
-- **Lambda:** pending. The dev infra has a read-only function `btd-dev-spike_fetch` (Wikipedia
-  scrape + yfinance download of every constituent, results in the log line `SPIKE {...}`),
-  scheduled at 16:30 and 17:00 ET on weekdays. It needs the repo wired and deployed (the commands
-  are in the session notes). Pass: ≥ 9/10 runs with ≥ 98% of tickers and the day's bar present.
+- **Lambda:** `btd-dev-spike_fetch` (read-only: Wikipedia scrape + yfinance download of every
+  constituent, results in the log line `SPIKE {...}`), deployed 2026-10-16 and scheduled at 16:30
+  and 17:00 ET on weekdays. Pass: ≥ 9/10 runs with ≥ 98% of tickers and the day's bar present.
+
+  | Run (ET) | Wikipedia | yfinance | Tickers | Newest bar complete |
+  |---|---|---|---|---|
+  | 2026-10-16 04:49 (manual) | 200, 0.3 s | 37.0 s | 503/503 | 2026-10-15: 503 |
+
+  Read the scheduled runs: `aws logs tail /aws/lambda/btd-dev-spike_fetch --since 7d | grep SPIKE`.
 
 ## 2. Close finality
 

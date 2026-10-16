@@ -53,27 +53,40 @@ item 1 is unreliable, **stop and revisit the design with the user** before Phase
 
 ## Phase 2: Pure core and backtest (TDD, offline)
 
-- [ ] `core/indicators.py`: ARCHITECTURE §2.1 exactly (row-based, positive-price filter, ≥ 220
+- [x] `core/indicators.py`: ARCHITECTURE §2.1 exactly (row-based, positive-price filter, ≥ 220
       rows, NY-normalized dates).
-- [ ] `core/signals.py`: candidates, the held/flagged rule, ranking with a ticker tie-break, and
+- [x] `core/signals.py`: candidates, the held/flagged rule, ranking with a ticker tie-break, and
       `free` including flagged exits.
-- [ ] `core/sizing.py`: alloc, gross cap with the lowest rank trimmed first, round down to step,
+- [x] `core/sizing.py`: alloc, gross cap with the lowest rank trimmed first, round down to step,
       min-size skips.
-- [ ] `core/exits.py`: the target `T`, rebound, time (XNYS session count) and removal flags.
-- [ ] `core/plan.py`: `plan(...) -> Plan` (entries, TPs, flags, the candidate table with skip
+- [x] `core/exits.py`: the target `T`, rebound, time (XNYS session count) and removal flags.
+- [x] `core/plan.py`: `plan(...) -> Plan` (entries, TPs, flags, the candidate table with skip
       reasons).
-- [ ] Tests: the spec §4 reference trades (META, EXPE, GLW, CF) to the cent; unit tests for slot
+- [x] Tests: the spec §4 reference trades (META, EXPE, GLW, CF) to the cent; unit tests for slot
       freeing, the gross cap, rounding, tie-breaks, `T` below entry, and a time exit at exactly
       10.
-- [ ] `backtest/`: a fill simulator around `plan()` (touch fill at `min(open, L)`, target at
+- [x] `backtest/`: a fill simulator around `plan()` (touch fill at `min(open, L)`, target at
       `max(open, T)`, next-open exits at `Open`, removal). CLI arguments: window, cost bp,
       membership CSV (default `sp500_history.csv` at the repo root, the file Hermes used;
       gitignored, latest snapshot ≤ date), optional venue list, bars directory. It writes
       `trades_<tag>.csv` in Hermes's columns and an equity CSV.
-- [ ] A yfinance bar downloader for the backtest (cached locally, gitignored).
+- [ ] A yfinance bar downloader for the backtest (cached locally, gitignored). *Not needed
+      yet: the backtest reads Hermes's cache, which is the same format.*
 
 **Exit:** the reference trades pass, and **the user's comparison of btd's trades CSV with Hermes
 on the same bars is accepted.** Rules frozen from here.
+
+*Code done 2026-10-16* (67 tests). Pre-check against Hermes's saved runs on the same bar cache
+(`hermes/.hermes_cache/bars/yfinance`, `sp500_history.csv`, 5 bp):
+- holdout 2023–: `trades_ho_A_fix.csv` 451 trades, **all 451 identical** (dates, reasons, prices);
+- IS 2011–22: `trades_is_A_fix.csv` 991 trades, **all 991 identical**; btd has one more (FSLR
+  2022-12-28): Hermes drops a position flagged for the next open on the window's last day;
+  btd closes it as `end`;
+- the older `trades_is_d0.9_s10_c5_limit.csv` predates Hermes's panel fix, so don't compare
+  with it;
+- Pepperstone-only holdout (Hermes's 478-name list, 3 bp): 428 trades, +0.990%, against the spec's
+  444 / +0.98%. That Hermes run isn't saved and its venue filter isn't known, so the user compares it.
+Awaiting the user's comparison.
 
 ---
 
