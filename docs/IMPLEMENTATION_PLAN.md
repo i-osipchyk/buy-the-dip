@@ -36,15 +36,15 @@ Scripts in `scripts/spike/`, plus one minimal Lambda for item 1. Record the answ
       per name.
 - [ ] **3. cTrader on the shared demo account** (`scripts/spike/broker_probe.py`, demo only,
       refuses a live account):
-  - [ ] account mode: hedging or netting;
-  - [ ] a GTD buy limit **placed while the market is closed** is accepted (**go/no-go**);
+  - [x] account mode: hedging or netting;
+  - [x] a GTD buy limit **placed while the market is closed** is accepted (**go/no-go**);
   - [ ] a position TP amend while closed;
   - [ ] a TP gap fill at the open price;
   - [ ] GTD expiry at 16:00 ET;
-  - [ ] `minVolume` / `stepVolume` on a sample, including `BRK.B.US`.
-- [ ] **4. Pepperstone D1 against yfinance:** bar boundaries and the close difference
+  - [x] `minVolume` / `stepVolume` on a sample, including `BRK.B.US`.
+- [x] **4. Pepperstone D1 against yfinance:** bar boundaries and the close difference
       distribution, which sets the §4.1 threshold.
-- [ ] **5. The Wikipedia scrape** ∩ venue symbols = about 478, with every mapping resolved.
+- [x] **5. The Wikipedia scrape** ∩ venue symbols = about 478, with every mapping resolved.
 
 **Exit:** every item is answered in `docs/SPIKE.md`. If item 3's closed-market placement fails, or
 item 1 is unreliable, **stop and revisit the design with the user** before Phase 2.

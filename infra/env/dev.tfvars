@@ -1,2 +1,2 @@
 env               = "dev"
-schedules_enabled = false # flip once the first deploy looks right
+schedules_enabled = true # Phase 1 spike: read-only fetch, no broker access
