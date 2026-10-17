@@ -1,3 +1,3 @@
 env               = "dev"
 schedules_enabled = true # Phase 1 spike: read-only fetch, no broker access
-trading_enabled   = false # flip after the supervised first evening (IMPLEMENTATION_PLAN Phase 4)
+trading_enabled   = true # forward test running since the 2026-10-15 evening (Phase 4)
