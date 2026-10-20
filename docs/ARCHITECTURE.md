@@ -275,8 +275,11 @@ The account is shared, so btd keeps a **virtual ledger** that behaves like a ded
   `alerts/telegram.py` and `messages.py`). Format: `ALERT [dev] <date>: …`. Secrets
   `telegram-bot-token` and `telegram-chat-id` are in SSM under `/btd/<env>/`.
 - **Infra alarms** (Lambda errors) come from `lambda-app` → `platform-alarms` SNS → Telegram.
-- **Evening summary** every session, also as a heartbeat on quiet days: equity, day change,
-  drawdown, fills, exits with reason and return, tonight's entries (ticker, `L`, volume), TPs
+- **Evening summary** every session, also as a heartbeat on quiet days: equity, day change
+  (`day_pnl`, measured from the last earlier record's equity, which the message names when it
+  isn't the previous session's) and total P&L since genesis (`total_pnl`; btd's own, unlike the
+  shared account's balance), drawdown, fills by ticker with each close's net P&L, exits with
+  reason and return, tonight's entries (ticker, `L`, volume), TPs
   amended, flagged exits, slots used.
 - **Open-exit confirmation**: each close with its fill price against the open.
 
@@ -296,14 +299,15 @@ Under the env prefix:
 
 **Session record** (§5.2 of the spec, plus what parity needs):
 - **inputs:** the bars and universe keys, `degraded`;
-- **ledger:** equity, realized, unrealized, peak, drawdown, slots used and free, gross notional;
+- **ledger:** equity, realized, unrealized, peak, drawdown, `day_pnl` (+ `day_pnl_since`),
+  `total_pnl`, slots used and free, gross notional;
 - **candidates, every signal**, not only the ordered ones: ticker, `Close`, `ATR5`, `SMA200`,
   `DayRet`, `VolPct`, rank, and `ordered` or skip reason (`no_slot`, `cap_trim`, `min_size`,
   `held`);
 - **orders:** `clientOrderId`, `L`, volume, broker id, status;
 - **positions:** entry date and price, volume, `held`, tonight's `T`, flag and reason;
-- **broker facts** for the session just ended, from deal history: fills with time and price,
-  slippage against `L` / `T` / `Open`, commission, swap;
+- **broker facts** for the session just ended, from deal history: fills with ticker, time and
+  price, slippage against `L` / `T` / `Open`, commission, swap, and a close's net `pnl`;
 - **alerts sent.**
 
 `trades.csv` is **derived** from the records by a script (never stored as a source of truth), in

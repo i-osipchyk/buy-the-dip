@@ -149,6 +149,54 @@ def test_a_target_filled_today_is_recorded_and_its_profit_reaches_equity(tmp_pat
         (5501, 731.71, True)]
 
 
+def _target_filled_today(tmp_path, records):
+    """META's target fills on 09-29 (+123.52 on the close after commission and swap, +123.38
+    with the buy's commission); ``records`` are the
+    earlier sessions' equities."""
+    from btd.broker import Deal
+    broker = FakeBroker(NAMES)
+    bought = datetime(2026, 9, 28, 10, 31, tzinfo=NY)
+    sold = datetime(2026, 9, 29, 10, 2, tzinfo=NY)
+    broker.deal_list = [
+        Deal(1, 101, 5501, "buy", 700, 713.92, bought, -0.14, False, None, None, symbol_id=334),
+        Deal(2, 102, 5501, "sell", 700, 731.71, sold, -0.14, True, 713.92, 124.53, swap=-0.87,
+             symbol_id=334)]
+    deps = _deps(tmp_path, datetime(2026, 9, 29, 16, 30, tzinfo=NY), broker=broker)
+    deps.store.put_json("dev/ledger/genesis.json",
+                        {"start_capital": 50_000.0, "at": "2026-09-25T16:30:00-04:00"})
+    deps.store.put_json("dev/ledger/state.json", {"btd_positions": [5501]})
+    for day, equity in records.items():
+        deps.store.put_json(f"dev/records/{day}.json", {"ledger": {"equity": equity}})
+    asyncio.run(evening(deps))
+    return deps
+
+
+def test_the_days_pnl_is_measured_from_the_previous_sessions_record(tmp_path):
+    deps = _target_filled_today(tmp_path, {"2026-09-25": 50_000.0, "2026-09-28": 50_000.0})
+
+    ledger = deps.store.get_json("dev/records/2026-09-29.json")["ledger"]
+    assert ledger["day_pnl"] == pytest.approx(123.38)  # incl. the buy commission
+    assert ledger["day_pnl_since"] is None
+    assert ledger["total_pnl"] == pytest.approx(123.38)
+
+
+def test_after_a_missed_evening_the_days_pnl_names_the_record_it_is_measured_from(tmp_path):
+    deps = _target_filled_today(tmp_path, {"2026-09-25": 49_900.0})       # no 09-28 record
+
+    ledger = deps.store.get_json("dev/records/2026-09-29.json")["ledger"]
+    assert ledger["day_pnl"] == pytest.approx(223.38)
+    assert ledger["day_pnl_since"] == "2026-09-25"
+    assert "P&L since 2026-09-25 +223.38 (+0.45%), total +123.38 (+0.25%)" in deps.notifier.sent[-1]
+
+
+def test_fills_name_their_ticker_and_a_close_its_profit(tmp_path):
+    deps = _target_filled_today(tmp_path, {})
+
+    (fill,) = deps.store.get_json("dev/records/2026-09-29.json")["fills"]
+    assert (fill["ticker"], fill["pnl"]) == ("META", pytest.approx(123.52))
+    assert "fills: sold META 7 @ 731.71 (+123.52)" in deps.notifier.sent[-1].splitlines()
+
+
 def test_a_position_timed_out_tonight_keeps_its_take_profit_and_may_be_bought_again(tmp_path):
     broker = FakeBroker(NAMES)
     broker.positions = {5400: _position(5400, 334, "btd-dev", 700.0,
@@ -310,6 +358,7 @@ def test_the_evening_ends_with_a_summary(tmp_path):
     assert deps.notifier.sent[-1] == "\n".join([
         "[dev] 2026-09-25 evening",
         "equity 50,041 (drawdown 0.0%), 1/10 slots",
+        "P&L today +41.23 (+0.08%), total +41.23 (+0.08%)",          # genesis was tonight
         "fills: none",
         "EXPE held 2: target 271.36",
         "tonight: META 7.0 @ 713.92, CF 45.1 @ 110.87",

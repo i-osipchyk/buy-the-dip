@@ -108,6 +108,7 @@ class Deal:
     entry_price: float | None     # closing deals: the position's entry price
     gross_profit: float | None    # closing deals: P&L before commission and swap
     swap: float | None = None     # closing deals: swap over the position's life (negative = paid)
+    symbol_id: int | None = None
 
 
 def _ms(dt: datetime) -> int:
@@ -309,7 +310,8 @@ class CTraderClient:
                 entry_price=close.entryPrice if close is not None else None,
                 gross_profit=close.grossProfit / 10 ** close.moneyDigits
                 if close is not None else None,
-                swap=close.swap / 10 ** close.moneyDigits if close is not None else None))
+                swap=close.swap / 10 ** close.moneyDigits if close is not None else None,
+                symbol_id=d.symbolId))
         return sorted(out, key=lambda d: (d.time, d.deal_id))
 
     # --- market data -------------------------------------------------------------------

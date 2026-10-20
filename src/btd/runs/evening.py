@@ -96,10 +96,14 @@ async def evening(deps: Deps) -> None:
     deps.store.put_json(state_key, {"btd_positions": sorted(known), "peak": peak,
                                     "warned": warned})
     day_start = datetime.combine(session, time(0), now.tzinfo)
-    fills = [{"deal_id": d.deal_id, "position_id": d.position_id, "side": d.side,
-              "price": d.price, "volume": d.volume, "time": d.time.isoformat(),
+    fills = [{"deal_id": d.deal_id, "position_id": d.position_id,
+              "ticker": ticker_of.get(d.symbol_id) if d.symbol_id is not None else None,
+              "side": d.side, "price": d.price, "volume": d.volume, "time": d.time.isoformat(),
               "closing": d.closing, "commission": d.commission, "swap": d.swap,
-              "gross_profit": d.gross_profit} for d in mine_deals if d.time >= day_start]
+              "gross_profit": d.gross_profit,
+              "pnl": d.commission + (d.gross_profit or 0.0) + (d.swap or 0.0) if d.closing
+              else None} for d in mine_deals if d.time >= day_start]
+    base_day, base_equity = _previous_equity(deps, session, genesis)
     decided = plan(table, holdings, book.equity)
     orders = await _execute(deps, decided, session, names, universe.venue, my_orders, alerts)
     positions_record = await _manage_positions(deps, decided, held, holdings)
@@ -108,7 +112,14 @@ async def evening(deps: Deps) -> None:
         "at": now.isoformat(),
         "ledger": {"start_capital": genesis["start_capital"], "equity": book.equity,
                    "realized": book.realized, "unrealized": book.unrealized, "peak": peak,
-                   "drawdown": drawdown},
+                   "drawdown": drawdown,
+                   "day_pnl": book.equity - base_equity,
+                   # the base is the last earlier record's equity (or the genesis capital);
+                   # named when it isn't the previous session's, e.g. after a missed evening
+                   "day_pnl_since": None
+                   if base_day in (deps.calendar.previous_session(session), session)
+                   else base_day.isoformat(),
+                   "total_pnl": book.equity - genesis["start_capital"]},
         "candidates": [c.__dict__ for c in decided.candidates],
         "orders": orders,
         "fills": fills,
@@ -123,6 +134,19 @@ async def evening(deps: Deps) -> None:
 def _latest_universe(deps: Deps) -> uni.Universe | None:
     doc = deps.store.get_json(f"{deps.env}/universe/latest.json")
     return uni.Universe(doc["constituents"], doc["venue"]) if doc else None
+
+
+def _previous_equity(deps: Deps, session: date, genesis: dict[str, Any]) -> tuple[date, float]:
+    """The equity the day's P&L is measured from: the latest earlier record with a ledger
+    (degraded records have none), else the genesis capital."""
+    start = datetime.fromisoformat(genesis["at"]).date()
+    day = deps.calendar.previous_session(session)
+    while day >= start:
+        doc = deps.store.get_json(key(deps.env, "records", day)) or {}
+        if doc.get("ledger"):
+            return day, float(doc["ledger"]["equity"])
+        day = deps.calendar.previous_session(day)
+    return start, float(genesis["start_capital"])
 
 
 async def _genesis(deps: Deps, now: datetime) -> dict[str, Any]:

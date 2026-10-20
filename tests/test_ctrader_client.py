@@ -277,10 +277,11 @@ def test_deals_in_a_window_with_money_scaled_and_closing_details():
 
     assert deals == [
         Deal(deal_id=1, order_id=101, position_id=77, side="buy", volume=8600, price=4180.27,
-             time=entry, commission=-3.01, closing=False, entry_price=None, gross_profit=None),
+             time=entry, commission=-3.01, closing=False, entry_price=None, gross_profit=None,
+             symbol_id=41),
         Deal(deal_id=2, order_id=102, position_id=77, side="sell", volume=8600, price=4244.05,
              time=exit_, commission=-3.01, closing=True, entry_price=4180.27,
-             gross_profit=5485.08, swap=0.0),
+             gross_profit=5485.08, swap=0.0, symbol_id=41),
     ]
     (req,) = fake.of_type(M.ProtoOADealListReq)
     assert (req.fromTimestamp, req.toTimestamp) == (ms(entry.replace(hour=0)),

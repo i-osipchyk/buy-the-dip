@@ -105,7 +105,8 @@ class FakeBroker:
             deal_id=next(self._ids), order_id=next(self._ids), position_id=position_id,
             side="sell", volume=volume, price=price, time=when,
             commission=-0.1, closing=True, entry_price=p.entry_price,
-            gross_profit=volume / 100 * (price - p.entry_price), swap=0.0))
+            gross_profit=volume / 100 * (price - p.entry_price), swap=0.0,
+            symbol_id=p.symbol_id))
 
 
 class FakeBars:
