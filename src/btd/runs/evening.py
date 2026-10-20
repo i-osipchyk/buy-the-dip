@@ -3,6 +3,7 @@ Idempotent: a session whose record is complete is not run again."""
 
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, time
 from typing import Any
 
@@ -23,6 +24,9 @@ VOLUME_PER_SHARE = 100
 PRICE_DIGITS = 2              # every US share on the venue (SPIKE §3)
 WARN_DRAWDOWN, BREACH_DRAWDOWN = -0.10, -0.15      # alerts only, no halt (ARCHITECTURE §8)
 DEADLINE = time(23, 0)        # New York: no valid bars by then -> degraded mode (ARCHITECTURE §8)
+
+
+logger = logging.getLogger(__name__)
 
 
 def key(env: str, kind: str, day: date, ext: str = "json") -> str:
@@ -59,7 +63,9 @@ async def evening(deps: Deps) -> None:
     if problems:
         if now.time() >= DEADLINE:
             await _degraded(deps, session, now, problems, held, my_orders)
-        return                                 # else: the next half-hourly attempt retries
+        else:                                  # the next half-hourly attempt retries
+            logger.info("bars not ready, waiting for the next attempt: %s", "; ".join(problems))
+        return
     deps.store.put_bars(key(env, "bars", session, "parquet"), snapshot)
 
     genesis = await _genesis(deps, now)

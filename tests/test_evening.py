@@ -2,6 +2,7 @@
 broker, store in a temp dir, recorded reference bars, the real XNYS calendar."""
 
 import asyncio
+import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -163,7 +164,18 @@ def test_a_position_timed_out_tonight_keeps_its_take_profit_and_may_be_bought_ag
     assert "btd-dev-20260928-META-E" in [p["client_order_id"] for p in broker.placed]
 
 
-def test_missing_bars_before_the_deadline_wait_quietly_for_the_next_attempt(tmp_path):
+def test_an_evening_without_entries_records_the_session_and_places_nothing(tmp_path):
+    deps = _deps(tmp_path, datetime(2026, 9, 24, 16, 30, tzinfo=NY))   # no signal that day
+
+    asyncio.run(evening(deps))
+
+    assert deps.broker.placed == []
+    record = deps.store.get_json("dev/records/2026-09-24.json")
+    assert record["complete"] is True and record["orders"] == []
+
+
+def test_missing_bars_before_the_deadline_wait_quietly_for_the_next_attempt(tmp_path, caplog):
+    caplog.set_level(logging.INFO)
     bars = FakeBars()
     bars.fail = True
     deps = _deps(tmp_path, datetime(2026, 9, 25, 17, 0, tzinfo=NY), bars=bars)
@@ -173,6 +185,8 @@ def test_missing_bars_before_the_deadline_wait_quietly_for_the_next_attempt(tmp_
     assert deps.broker.placed == [] and deps.broker.cancelled == []
     assert deps.store.get_json("dev/records/2026-09-25.json") is None
     assert deps.notifier.sent == []
+    assert "waiting for the next attempt" in caplog.text     # quiet, but not silent in the logs
+    assert "names have a complete 2026-09-25 bar" in caplog.text
 
 
 def test_no_valid_bars_by_the_deadline_runs_degraded(tmp_path):

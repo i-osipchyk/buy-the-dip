@@ -12,6 +12,8 @@ from typing import Any
 from btd.config import load_env
 
 logging.getLogger().setLevel(logging.INFO)
+# httpx logs each request URL at INFO, and Telegram's carries the bot token (seen 2026-10-19).
+logging.getLogger("httpx").setLevel(logging.WARNING)
 load_env()  # once per cold start
 logger = logging.getLogger(__name__)
 

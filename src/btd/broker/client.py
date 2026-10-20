@@ -213,6 +213,8 @@ class CTraderClient:
 
     async def symbol_specs(self, symbol_ids: list[int]) -> dict[int, SymbolSpec]:
         """Volume specs (digits, lot size, step, minimum) by symbol id, in one request."""
+        if not symbol_ids:                  # the API rejects an empty list (INVALID_REQUEST)
+            return {}
         res = await self._request(
             M.ProtoOASymbolByIdReq(ctidTraderAccountId=self.account_id, symbolId=symbol_ids))
         return {s.symbolId: SymbolSpec(s.symbolId, s.digits, s.lotSize, s.stepVolume, s.minVolume)

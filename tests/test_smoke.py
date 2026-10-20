@@ -39,3 +39,14 @@ def test_handler(monkeypatch):
     from btd import handlers
 
     assert handlers.example({}, None) == {"ok": True}
+
+
+def test_handlers_keep_request_urls_out_of_the_logs(monkeypatch):
+    import logging
+
+    monkeypatch.setenv("LLMKIT_SINKS", "none")
+    monkeypatch.setenv("LLMKIT_PROJECT", "btd")
+    from btd import handlers  # noqa: F401  (configures logging on import)
+
+    # httpx logs each URL at INFO; Telegram's carries the bot token
+    assert not logging.getLogger("httpx").isEnabledFor(logging.INFO)

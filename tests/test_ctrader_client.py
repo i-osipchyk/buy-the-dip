@@ -439,6 +439,13 @@ def test_fetches_volume_specs_for_many_symbols_in_one_request():
     assert list(req.symbolId) == [7001, 7002]
 
 
+def test_volume_specs_for_no_symbols_send_no_request():
+    fake = FakeCTrader()            # the API rejects an empty symbolId list (INVALID_REQUEST)
+
+    assert run(fake, lambda client: client.symbol_specs([])) == {}
+    assert fake.of_type(M.ProtoOASymbolByIdReq) == []
+
+
 def test_places_a_limit_order_good_till_the_expiry_with_our_ids():
     from datetime import UTC, datetime
 
